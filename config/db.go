@@ -2,25 +2,51 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/DVTcode/podcast_server/models"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func InitDB() (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+var DB *gorm.DB
+
+func LoadEnv() {
+	err := godotenv.Load() //Load để đọc file .env, không truyền vào gì thì nó tự động mặc định kiếm .env để gán vào biến môi trường và nếu file .env bị lỗi thì trả về false nghĩa là ko phải nil
+	if err != nil {
+		log.Fatal("❌ Load .env failed") //Dùng để ghi log dạng lỗi nghiêm trọng rồi thoát khỏi chương trình ngay lập tức (giống như panic()).
+	}
+}
+
+func ConnectDB() {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
 		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_PASS"),
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"),
 	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	var err error
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{}) //mở kết nối đến DB qua driver mysql.
+	// gor.Open Hàm của GORM để mở kết nối CSDL. Trả về *gorm.DB và error.
+	// &gorm.Config{} Cấu hình thêm cho GORM (bạn có thể để trống hoặc tùy chỉnh sâu hơn).
 	if err != nil {
-		return nil, err
+		log.Fatal("❌ Failed to connect DB:", err)
 	}
-	return db, nil
+
+	// ✅ Auto migrate các bảng
+	err = DB.AutoMigrate(
+		&models.NguoiDung{},
+		&models.TaiLieu{},
+		&models.Podcast{},
+		&models.DanhMuc{},
+	)
+	if err != nil {
+		log.Fatal("❌ Auto migration failed:", err)
+	}
+
+	fmt.Println("✅ Connected to DB and Migrated!")
 }

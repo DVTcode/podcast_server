@@ -51,3 +51,4 @@ Desktop.ini
 
 # Thư mục test hoặc tạm
 tmp/
+.env
