@@ -15,16 +15,11 @@ main
 *.swp
 *.bak
 
-# Go modules và cache
-/go.sum
-go.sum
+
 vendor/
 /pkg/
 
 # Docker và môi trường
-.env             # bỏ file thực
-!.env.example    # giữ file mẫu
-*.env            # bỏ các file đuôi .env (nếu có)
 docker-compose.override.yml
 
 # VSCode
@@ -49,6 +44,4 @@ Desktop.ini
 .idea/
 *.iml
 
-# Thư mục test hoặc tạm
-tmp/
-.env
+
