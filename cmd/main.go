@@ -21,7 +21,7 @@ func main() {
 
 	port := ":" + os.Getenv("PORT")
 	if port == ":" {
-		port = ":8081"
+		port = ":8080"
 	}
 	log.Println("🚀 Server running at http://localhost" + port)
 	r.Run(port)
