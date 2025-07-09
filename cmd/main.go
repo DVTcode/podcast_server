@@ -1,28 +1,38 @@
-// main.go
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/DVTcode/podcast_server/config"
 	"github.com/DVTcode/podcast_server/routes"
-
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	config.LoadEnv()
+	// Chỉ load .env khi chạy local (Railway không cần)
+	if os.Getenv("RAILWAY_ENVIRONMENT") == "" {
+		config.LoadEnv()
+	}
+
+	// Connect DB
 	config.ConnectDB()
 
+	// Setup Gin
 	r := gin.Default()
 
+	// Setup routes
 	routes.SetupRoutes(r, config.DB)
 
-	port := ":" + os.Getenv("PORT")
-	if port == ":" {
-		port = ":8080"
+	// Get port from environment (Railway sets PORT automatically)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default cho local
 	}
-	log.Println("🚀 Server running at http://localhost" + port)
-	r.Run(port)
+
+	fmt.Printf("🚀 Server starting on port %s\n", port)
+
+	// Start server
+	log.Fatal(r.Run(":" + port))
 }
