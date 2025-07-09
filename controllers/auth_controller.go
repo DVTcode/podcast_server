@@ -32,7 +32,18 @@ func Register(c *gin.Context, db *gorm.DB) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email đã được sử dụng"})
 		return
 	}
-
+	if input.MatKhau == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mật khẩu không được để trống"})
+		return
+	}
+	if len(input.MatKhau) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mật khẩu phải có ít nhất 6 ký tự"})
+		return
+	}
+	if input.HoTen == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Họ tên không được để trống"})
+		return
+	}
 	// Hash mật khẩu
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.MatKhau), bcrypt.DefaultCost)
 	if err != nil {
