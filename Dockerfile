@@ -1,17 +1,33 @@
-FROM golang:1.23
+# Build stage
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
+# Copy go mod files
 COPY go.mod go.sum ./
+
+# Download dependencies
 RUN go mod download
 
+# Copy source code
 COPY . .
 
-# Thêm quyền thực thi cho wait-for-it.sh
-RUN chmod +x wait-for-it.sh
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
 
-# Build Go binary
-RUN go build -o main ./cmd/main.go
+# Production stage
+FROM alpine:latest
 
-# Dùng wait-for-it.sh trước khi chạy binary
-CMD ["./wait-for-it.sh", "db:3306", "--", "./main"]
+# Install ca-certificates
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the binary from builder stage
+COPY --from=builder /app/main .
+
+# Expose port that Railway expects
+EXPOSE $PORT
+
+# Run the application
+CMD ["./main"]
