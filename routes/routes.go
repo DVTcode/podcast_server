@@ -21,4 +21,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		})
 	}
 
+	r.GET("/health", controllers.HealthCheck)
+	// Thêm route thực tế tại đây
+
 }
