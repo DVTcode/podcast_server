@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/DVTcode/podcast_server/controllers"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -11,5 +12,13 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			"message": "pong",
 		})
 	})
-	// Thêm route thực tế tại đây
+	api := r.Group("/api")
+
+	auth := api.Group("/auth")
+	{
+		auth.POST("/register", func(c *gin.Context) {
+			controllers.Register(c, db)
+		})
+	}
+
 }
