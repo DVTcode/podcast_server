@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/DVTcode/podcast_server/config"
-
+	"github.com/DVTcode/podcast_server/routes"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,6 +15,8 @@ func main() {
 	config.ConnectDB()
 
 	r := gin.Default()
+	routes.SetupRoutes(r, config.DB)
+
 	port := ":" + os.Getenv("PORT")
 	if port == ":" {
 		port = ":8080"
