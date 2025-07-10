@@ -5,29 +5,29 @@ WORKDIR /app
 
 # Copy go mod files
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
+# Copy source code & env
 COPY . .
+COPY .env .env
 
-# Build the application
+# Build app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
 
 # Production stage
 FROM alpine:latest
 
-# Install ca-certificates
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates bash
 
 WORKDIR /root/
 
-# Copy the binary from builder stage
+# Copy binary, .env, and wait-for-it
 COPY --from=builder /app/main .
+COPY --from=builder /app/.env .env
+COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
 
-# Expose port that Railway expects
-EXPOSE $PORT
+EXPOSE 8080
 
-# Run the application
-CMD ["./main"]
+# Start with wait-for-it
+CMD ["/wait-for-it.sh", "db:3306", "--", "./main"]
