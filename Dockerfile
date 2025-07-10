@@ -9,7 +9,6 @@ RUN go mod download
 
 # Copy source code & env
 COPY . .
-COPY .env .env
 
 # Build app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
