@@ -16,9 +16,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 
 	auth := api.Group("/auth")
 	{
-		auth.POST("/register", func(c *gin.Context) {
-			controllers.Register(c, db)
-		})
+		auth.POST("/register", controllers.Register)
+		auth.POST("/login", controllers.Login)
 	}
 
 	r.GET("/health", controllers.HealthCheck)
