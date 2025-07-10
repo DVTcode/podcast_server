@@ -35,8 +35,7 @@ services:
       - podcast_net
 
 volumes:
-  podcast_db_data:
+  podcast_db_data: {}
 
 networks:
   podcast_net:
-
