@@ -8,12 +8,16 @@ import (
 	"github.com/DVTcode/podcast_server/config"
 	"github.com/DVTcode/podcast_server/routes"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv" // ✅ Thêm dòng này để dùng godotenv
 )
 
 func main() {
-	// Chỉ load .env khi chạy local (Railway không cần)
-	if os.Getenv("RAILWAY_ENVIRONMENT") == "" {
-		config.LoadEnv()
+	// ✅ Chỉ load .env khi không chạy Docker (tức là chạy local)
+	if os.Getenv("DOCKER_ENV") != "true" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatalf("❌ Load .env failed: %v", err)
+		}
 	}
 
 	// Connect DB
@@ -28,7 +32,7 @@ func main() {
 	// Get port from environment (Railway sets PORT automatically)
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default cho local
+		port = "8080" // Default local
 	}
 
 	fmt.Printf("🚀 Server starting on port %s\n", port)
