@@ -26,6 +26,7 @@ func GetProfile(c *gin.Context) {
 // PUT /api/users/profile
 type UpdateProfileInput struct {
 	HoTen string `json:"ho_ten" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
 }
 
 func UpdateProfile(c *gin.Context) {
@@ -37,9 +38,29 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Model(&models.NguoiDung{}).
+	// Kiểm tra email đã tồn tại (trừ user hiện tại)
+	var existingUser models.NguoiDung
+	if err := config.DB.
+		Where("email = ? AND id != ?", input.Email, userID).
+		First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email đã được sử dụng"})
+		return
+	}
+
+	// Tiến hành cập nhật và kiểm tra có user nào bị ảnh hưởng không
+	tx := config.DB.Model(&models.NguoiDung{}).
 		Where("id = ?", userID).
-		Update("ho_ten", input.HoTen).Error; err != nil {
+		Updates(map[string]interface{}{
+			"ho_ten": input.HoTen,
+			"email":  input.Email,
+		})
+
+	if tx.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy người dùng"})
+		return
+	}
+
+	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cập nhật thất bại"})
 		return
 	}
