@@ -26,11 +26,13 @@ services:
     depends_on:
       - db
     environment:
+      DOCKER_ENV: "true"
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: podcast_user
       DB_PASSWORD: 123456789
       DB_NAME: podcast_db
+      JWT_SECRET: super_secret_123456 
     networks:
       - podcast_net
 
