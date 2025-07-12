@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/DVTcode/podcast_server/config"
 	"github.com/DVTcode/podcast_server/routes"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv" // ✅ Thêm dòng này để dùng godotenv
 )
@@ -25,6 +27,16 @@ func main() {
 
 	// Setup Gin
 	r := gin.Default()
+
+	// ✅ Bổ sung cấu hình CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*", "https://podcastserver-production.up.railway.app"}, // 👈 Thay bằng domain frontend thật
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Setup routes
 	routes.SetupRoutes(r, config.DB)
