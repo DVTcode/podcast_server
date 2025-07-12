@@ -14,13 +14,9 @@ import (
 )
 
 func main() {
-	// ✅ Chỉ load .env khi không chạy Docker (tức là chạy local)
 	if os.Getenv("DOCKER_ENV") != "true" {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatalf("❌ Load .env failed: %v", err)
-		}
-	}
+	_ = godotenv.Load() // chỉ dùng khi chạy local, không lỗi khi thiếu
+}
 
 	// Connect DB
 	config.ConnectDB()
