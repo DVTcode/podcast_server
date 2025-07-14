@@ -38,6 +38,10 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		category.PUT("/:id/status", controllers.ToggleDanhMucStatus)
 	}
 	// Thêm các route khác tại đây
+	admin := api.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
+	admin.POST("/documents/upload", controllers.UploadDocument)
+
 	r.GET("/health", controllers.HealthCheck)
 	// Thêm route thực tế tại đây
 
