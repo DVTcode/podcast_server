@@ -9,15 +9,13 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/supabase-community/storage-go v0.7.0
-	github.com/unidoc/unioffice v1.39.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0
 )
 
 require (
 	github.com/kr/text v0.2.0 // indirect
-	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db // indirect
-	github.com/richardlehane/msoleps v1.0.3 // indirect
+	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db 
 )
 
 require (
