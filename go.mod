@@ -21,6 +21,7 @@ require github.com/kr/text v0.2.0 // indirect
 require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 
+	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 )
 

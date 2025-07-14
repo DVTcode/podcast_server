@@ -60,7 +60,10 @@ func UploadDocument(c *gin.Context) {
 	defer f.Close()
 
 	// Trích xuất nội dung văn bản từ mọi loại file
-	noiDung, err := services.NormalizeInput(file)
+	noiDung, err := services.NormalizeInput(services.InputSource{
+		Type:       services.InputDOCX,
+		FileHeader: file,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
 		return
