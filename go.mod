@@ -18,6 +18,12 @@ require github.com/gosimple/unidecode v1.0.1 // indirect
 require github.com/kr/text v0.2.0 // indirect
 
 require (
+	github.com/kr/text v0.2.0 // indirect
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 
+)
+
+
+require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
