@@ -1,6 +1,8 @@
 module github.com/DVTcode/podcast_server
 
-go 1.23.10
+go 1.24.1
+
+toolchain go1.24.4
 
 require (
 	github.com/gin-gonic/gin v1.10.1
@@ -12,6 +14,11 @@ require (
 
 require github.com/gosimple/unidecode v1.0.1 // indirect
 require github.com/kr/text v0.2.0 // indirect
+
+require (
+	github.com/kr/text v0.2.0 // indirect
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 // indirect
+)
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
