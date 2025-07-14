@@ -59,14 +59,11 @@ func UploadDocument(c *gin.Context) {
 	}
 	defer f.Close()
 
-	// Trích xuất nội dung nếu là PDF
-	var noiDung string
-	if ext == ".pdf" {
-		noiDung, err = services.ExtractTextFromPDF(f)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung PDF", "details": err.Error()})
-			return
-		}
+	// Trích xuất nội dung văn bản từ mọi loại file
+	noiDung, err := services.NormalizeInput(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
+		return
 	}
 
 	// Lưu vào DB
