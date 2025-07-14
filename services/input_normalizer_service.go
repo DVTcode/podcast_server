@@ -44,6 +44,6 @@ func NormalizeInput(input InputSource) (string, error) {
 		return ExtractTextFromDOCX(input.FileHeader)
 
 	default:
-		return "", errors.New("Loại input không được hỗ trợ")
+		return "", errors.New("loại input không được hỗ trợ")
 	}
 }
