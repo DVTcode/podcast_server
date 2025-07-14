@@ -27,6 +27,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		user.PUT("/profile", controllers.UpdateProfile)
 		user.POST("/change-password", controllers.ChangePassword)
 	}
+
+	admin := api.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
+	admin.POST("/documents/upload", controllers.UploadDocument)
+
 	r.GET("/health", controllers.HealthCheck)
 	// Thêm route thực tế tại đây
 
