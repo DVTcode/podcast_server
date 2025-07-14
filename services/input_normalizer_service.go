@@ -3,8 +3,6 @@ package services
 import (
 	"errors"
 	"mime/multipart"
-	"path/filepath"
-	"strings"
 )
 
 // Định nghĩa loại input
@@ -26,23 +24,26 @@ type InputSource struct {
 }
 
 // Hàm xử lý input thành plain text
-func NormalizeInput(file *multipart.FileHeader) (string, error) {
-	// mở file từ fileHeader
-	f, err := file.Open()
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
+func NormalizeInput(input InputSource) (string, error) {
+	switch input.Type {
+	case InputText:
+		return input.Text, nil
 
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	switch ext {
-	case ".txt":
-		return ExtractTextFromTXT(file)
-	case ".pdf":
+	case InputTXT:
+		return ExtractTextFromTXT(input.FileHeader)
+
+	case InputPDF:
+		f, err := input.FileHeader.Open()
+		if err != nil {
+			return "", err
+		}
+		defer f.Close()
 		return ExtractTextFromPDF(f)
-	case ".doc", ".docx":
-		return ExtractTextFromDOC(file)
+
+	case InputDOCX:
+		return ExtractTextFromDOCX(input.FileHeader)
+
 	default:
-		return "", errors.New("Định dạng file không được hỗ trợ")
+		return "", errors.New("Loại input không được hỗ trợ")
 	}
 }
