@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/DVTcode/podcast_server/models"
+	"github.com/DVTcode/podcast_server/services"
 	"github.com/DVTcode/podcast_server/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -49,30 +50,49 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	// Lưu vào DB
-	taiLieu := models.TaiLieu{
-		ID:            id,
-		TenFileGoc:    file.Filename,
-		DuongDanFile:  publicURL,
-		LoaiFile:      ext[1:], // bỏ dấu chấm
-		KichThuocFile: file.Size,
-		TrangThai:     "Đã tải lên",
-		NguoiTaiLen:   userID,
+	// Đường dẫn tạm local để đọc file sau khi upload (nếu cần)
+	// Do file không còn local nên bạn cần mở lại file tạm từ fileHeader nếu cần xử lý trực tiếp
+	f, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể đọc file đã upload"})
+		return
 	}
-	if err := db.Create(&taiLieu).Error; err != nil {
+	defer f.Close()
+
+	// Trích xuất nội dung nếu là PDF
+	var noiDung string
+	if ext == ".pdf" {
+		noiDung, err = services.ExtractTextFromPDF(f)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung PDF", "details": err.Error()})
+			return
+		}
+	}
+
+	// Lưu vào DB
+	doc := models.TaiLieu{
+		ID:               id,
+		TenFileGoc:       file.Filename,
+		DuongDanFile:     publicURL,
+		LoaiFile:         ext[1:],
+		KichThuocFile:    file.Size,
+		TrangThai:        "Đã tải lên",
+		NguoiTaiLen:      userID,
+		NoiDungTrichXuat: noiDung,
+	}
+	if err := db.Create(&doc).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
 
-	// Truy vấn lại để preload người dùng
-	var fullTaiLieu models.TaiLieu
-	if err := db.Preload("NguoiDung").First(&fullTaiLieu, "id = ?", id).Error; err != nil {
+	// Preload người dùng để trả kết quả chi tiết
+	if err := db.Preload("NguoiDung").First(&doc, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể load thông tin người dùng"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "Tải lên thành công",
-		"tai_lieu": fullTaiLieu,
+		"tai_lieu": doc,
 	})
 }
