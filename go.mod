@@ -15,7 +15,7 @@ require (
 
 require (
 	github.com/kr/text v0.2.0 // indirect
-	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db 
+	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db
 )
 
 require (
