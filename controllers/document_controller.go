@@ -68,6 +68,7 @@ func UploadDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
 		return
 	}
+	noiDung = services.CleanText(noiDung)
 
 	// Lưu vào DB
 	doc := models.TaiLieu{
