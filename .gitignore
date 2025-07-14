@@ -21,7 +21,7 @@ vendor/
 
 # Docker và môi trường
 docker-compose.override.yml
-
+text.txt
 # VSCode
 .vscode/
 *.code-workspace
@@ -43,5 +43,5 @@ Desktop.ini
 # Nếu có các IDE khác (JetBrains, Eclipse,...)
 .idea/
 *.iml
-
+.env
 
