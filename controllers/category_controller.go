@@ -28,10 +28,16 @@ func GetDanhMucs(c *gin.Context) {
 
 	query := config.DB.Model(&models.DanhMuc{})
 
+	// Lấy role từ context (giao sử đã có middleware đã set)
+	role, _ := c.Get("role")
+	if role != "admin" {
+		query = query.Where("kich_hoat = ?", true) // chỉ lấy danh mục đã kích hoạt
+	}
+
 	if search != "" {
 		query = query.Where("LOWER(ten_danh_muc) LIKE ?", "%"+strings.ToLower(search)+"%")
 	}
-	if status != "" {
+	if status != "" && role == "admin" {
 		switch status {
 		case "true":
 			query = query.Where("kich_hoat = ?", true)
