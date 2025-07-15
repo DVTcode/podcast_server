@@ -7,11 +7,11 @@ func GetInputTypeFromExt(ext string) (InputType, error) {
 	switch ext {
 	case ".pdf":
 		return InputPDF, nil
-	case ".doc", ".docx":
+	case ".docx":
 		return InputDOCX, nil
 	case ".txt":
 		return InputTXT, nil
 	default:
-		return "", errors.New("Định dạng file không hỗ trợ")
+		return "", errors.New("định dạng file không hỗ trợ")
 	}
 }
