@@ -9,6 +9,8 @@ require (
 	gorm.io/gorm v1.30.0
 )
 
+require github.com/gosimple/unidecode v1.0.1 // indirect
+
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
@@ -25,6 +27,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
+	github.com/gosimple/slug v1.15.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

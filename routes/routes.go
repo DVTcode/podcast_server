@@ -27,6 +27,17 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		user.PUT("/profile", controllers.UpdateProfile)
 		user.POST("/change-password", controllers.ChangePassword)
 	}
+
+	category := api.Group("/categories")
+	{
+		category.Use(middleware.AuthMiddleware())
+		category.GET("/", controllers.GetDanhMucs)
+		category.GET("/:id", controllers.GetDanhMucByID)
+		category.POST("/", controllers.CreateDanhMuc)
+		category.PUT("/:id", controllers.UpdateDanhMuc)
+		category.PUT("/:id/status", controllers.ToggleDanhMucStatus)
+	}
+	// Thêm các route khác tại đây
 	r.GET("/health", controllers.HealthCheck)
 	// Thêm route thực tế tại đây
 
