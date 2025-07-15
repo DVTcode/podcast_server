@@ -35,6 +35,7 @@ services:
       JWT_SECRET: super_secret_123456
       SUPABASE_URL: https://ejfdickbdcvgsgsawgvm.supabase.co
       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRpY2tiZGN2Z3Nnc2F3Z3ZtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODM3MDQyMiwiZXhwIjoyMDYzOTQ2NDIyfQ.XpZXj5AfTa_lON_lC5EHhiXN-fsIUgM-upMgA1_OqhA
+      GEMINI_API_KEY: AIzaSyCeGZiWJ6_Ynysbwt5-32VRStPTGs1Iwyw
     networks:
       - podcast_net
 

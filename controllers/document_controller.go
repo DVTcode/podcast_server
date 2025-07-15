@@ -23,22 +23,17 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	// Kiểm tra kích thước
-	if file.Size > 50*1024*1024 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File vượt quá 50MB"})
+	// Kiểm tra kích thước (tối đa 20MB)
+	if file.Size > 20*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File vượt quá 20MB"})
 		return
 	}
 
-	// Kiểm tra định dạng
+	// Xác định loại input từ phần mở rộng
 	ext := filepath.Ext(file.Filename)
-	allowed := map[string]bool{
-		".pdf":  true,
-		".doc":  true,
-		".docx": true,
-		".txt":  true,
-	}
-	if !allowed[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Chỉ cho phép PDF, DOC, DOCX, TXT"})
+	inputType, err := services.GetInputTypeFromExt(ext)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -50,50 +45,48 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	// Đường dẫn tạm local để đọc file sau khi upload (nếu cần)
-	// Do file không còn local nên bạn cần mở lại file tạm từ fileHeader nếu cần xử lý trực tiếp
-	f, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể đọc file đã upload"})
-		return
-	}
-	defer f.Close()
-
-	// Trích xuất nội dung văn bản từ mọi loại file
+	// Gọi NormalizeInput để trích xuất nội dung
 	noiDung, err := services.NormalizeInput(services.InputSource{
-		Type:       services.InputDOCX,
+		Type:       inputType,
 		FileHeader: file,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
 		return
 	}
-	noiDung = services.CleanText(noiDung)
 
-	// Lưu vào DB
+	// Làm sạch nội dung bằng Gemini
+	cleanedContent, err := services.CleanTextPipeline(noiDung)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể làm sạch nội dung", "details": err.Error()})
+		return
+	}
+
+	// Lưu thông tin tài liệu vào DB
 	doc := models.TaiLieu{
 		ID:               id,
 		TenFileGoc:       file.Filename,
 		DuongDanFile:     publicURL,
-		LoaiFile:         ext[1:],
+		LoaiFile:         ext[1:], // bỏ dấu chấm
 		KichThuocFile:    file.Size,
 		TrangThai:        "Đã tải lên",
 		NguoiTaiLen:      userID,
-		NoiDungTrichXuat: noiDung,
+		NoiDungTrichXuat: cleanedContent,
 	}
 	if err := db.Create(&doc).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
 
-	// Preload người dùng để trả kết quả chi tiết
+	// Trả về kết quả có preload người dùng
 	if err := db.Preload("NguoiDung").First(&doc, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể load thông tin người dùng"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":  "Tải lên thành công",
-		"tai_lieu": doc,
+		"message":     "Tải lên thành công",
+		"tai_lieu":    doc,
+		"raw_content": noiDung,
 	})
 }
