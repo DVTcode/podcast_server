@@ -85,8 +85,7 @@ func UploadDocument(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":     "Tải lên thành công",
-		"tai_lieu":    doc,
-		"raw_content": noiDung,
+		"message":  "Tải lên thành công",
+		"tai_lieu": doc,
 	})
 }
