@@ -52,5 +52,5 @@ func VerifyToken(tokenStr string) (*JWTClaims, error) {
 		return claims, nil
 	}
 
-	return nil, errors.New("Token không hợp lệ")
+	return nil, errors.New("token không hợp lệ")
 }
