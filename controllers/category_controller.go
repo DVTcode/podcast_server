@@ -64,6 +64,11 @@ func GetDanhMucs(c *gin.Context) {
 }
 
 func ToggleDanhMucStatus(c *gin.Context) {
+	role, _ := c.Get("role")
+	if role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
+		return
+	}
 	id := c.Param("id")
 	var body struct {
 		KichHoat bool `json:"kich_hoat"`
@@ -87,6 +92,10 @@ func ToggleDanhMucStatus(c *gin.Context) {
 }
 
 func CreateDanhMuc(c *gin.Context) {
+	if role, _ := c.Get("role"); role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
+		return
+	}
 	var input struct {
 		TenDanhMuc string `json:"ten_danh_muc" binding:"required"`
 		MoTa       string `json:"mo_ta"`
@@ -115,6 +124,10 @@ func CreateDanhMuc(c *gin.Context) {
 }
 
 func UpdateDanhMuc(c *gin.Context) {
+	if role, _ := c.Get("role"); role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
+		return
+	}
 	var input struct {
 		TenDanhMuc string `json:"ten_danh_muc" binding:"required"`
 		MoTa       string `json:"mo_ta"`
@@ -141,6 +154,10 @@ func UpdateDanhMuc(c *gin.Context) {
 }
 
 func GetDanhMucByID(c *gin.Context) {
+	if role, _ := c.Get("role"); role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
+		return
+	}
 	id := c.Param("id")
 	var danhMuc models.DanhMuc
 
