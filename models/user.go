@@ -7,7 +7,7 @@ import (
 type NguoiDung struct {
 	ID       string    `gorm:"type:char(36);primaryKey" json:"id"`
 	Email    string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
-	MatKhau  string    `gorm:"type:varchar(255);not null" json:"mat_khau"`
+	MatKhau  string    `gorm:"type:varchar(255);not null" json:"-"`
 	HoTen    string    `gorm:"type:varchar(100)" json:"ho_ten"`
 	VaiTro   string    `gorm:"type:enum('admin', 'user');default:'user'" json:"vai_tro"`
 	NgayTao  time.Time `gorm:"autoCreateTime" json:"ngay_tao"`

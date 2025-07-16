@@ -11,7 +11,7 @@ type TaiLieu struct {
 	LoaiFile         string     `gorm:"type:varchar(50)" json:"loai_file"`
 	KichThuocFile    int64      `gorm:"type:int" json:"kich_thuoc_file"`
 	NoiDungTrichXuat string     `gorm:"type:longtext" json:"noi_dung_trich_xuat"`
-	TrangThai        string     `gorm:"type:enum('Đã tải lên', 'Đang kiểm tra', 'Đang trích xuất', 'Đang xử lý AI', 'Chờ duyệt kịch bản', 'Kịch bản phê duyệt', 'Kịch bản từ chối')" json:"trang_thai"`
+	TrangThai        string     `gorm:"type:enum('Đã tải lên', 'Đã kiểm tra', 'Đã trích xuất', 'Đã xử lý AI', 'Hoàn thành', 'Đã xuất bản')" json:"trang_thai"`
 	NguoiTaiLen      string     `gorm:"type:char(36);not null" json:"nguoi_tai_len"`
 	NgayTaiLen       time.Time  `gorm:"autoCreateTime" json:"ngay_tai_len"`
 	NgayXuLyXong     *time.Time `gorm:"" json:"ngay_xu_ly_xong"`
