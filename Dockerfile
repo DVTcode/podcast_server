@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -28,4 +28,4 @@ RUN chmod +x /wait-for-it.sh
 EXPOSE 8080
 
 # Start with wait-for-it
-CMD ["/wait-for-it.sh", "mysql.railway.internal:3306", "--", "./main"]
+CMD ["/wait-for-it.sh", "db:3306", "--", "./main"]

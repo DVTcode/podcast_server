@@ -28,6 +28,12 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		user.POST("/change-password", controllers.ChangePassword)
 	}
 
+	admin := api.Group("/admin")
+	{
+		admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
+		admin.POST("/documents/upload", controllers.UploadDocument)
+	}
+
 	category := api.Group("/categories")
 	{
 		category.Use(middleware.AuthMiddleware())
