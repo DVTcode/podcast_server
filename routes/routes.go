@@ -29,16 +29,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	}
 
 	admin := api.Group("/admin")
-<<<<<<< Updated upstream
-	{
-		admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
-		admin.POST("/documents/upload", controllers.UploadDocument)
-=======
+
 	admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // inject db cho nhóm admin
 	{
 		admin.POST("/documents/upload", controllers.UploadDocument)
 		admin.GET("/documents", controllers.ListDocumentStatus) // BE-012: List trạng thái tài liệu
->>>>>>> Stashed changes
 	}
 
 	category := api.Group("/categories")
