@@ -2,7 +2,7 @@ module github.com/DVTcode/podcast_server
 
 go 1.24.1
 
-toolchain go1.24.4
+toolchain go1.24.5
 
 require (
 	cloud.google.com/go/texttospeech v1.13.0

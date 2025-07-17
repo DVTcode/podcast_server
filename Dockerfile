@@ -32,4 +32,4 @@ RUN chmod +x /wait-for-it.sh
 EXPOSE 8080
 
 # Start with wait-for-it
-CMD ["/wait-for-it.sh", "mysql.railway.internal:3306", "--", "./main"]
+CMD ["/wait-for-it.sh", "db:3306", "--", "./main"]

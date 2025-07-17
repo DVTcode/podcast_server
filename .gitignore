@@ -44,6 +44,6 @@ Desktop.ini
 .idea/
 *.iml
 .env
-
 .env
+
 credentials/google-credentials.json
