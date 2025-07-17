@@ -45,3 +45,5 @@ Desktop.ini
 *.iml
 .env
 
+.env
+credentials/google-credentials.json
