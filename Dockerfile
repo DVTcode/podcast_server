@@ -18,8 +18,12 @@ WORKDIR /root/
 
 COPY --from=builder /app/main ./
 COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
-RUN chmod +x /wait-for-it.sh
+
+# ✅ Copy init script
+COPY --from=builder /app/scripts/init-creds.sh ./init-creds.sh
+RUN chmod +x wait-for-it.sh init-creds.sh
 
 EXPOSE 8080
 
-CMD ["/wait-for-it.sh", "db:3306", "--", "./main"]
+# ✅ Gọi init-creds.sh trước khi chạy app
+CMD ["bash", "-c", "./init-creds.sh && ./wait-for-it.sh db:3306 -- ./main"]
