@@ -18,7 +18,6 @@ RUN apk --no-cache add ca-certificates bash
 WORKDIR /root/
 
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env .env
 COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
 
 RUN chmod +x /wait-for-it.sh ./main
