@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"os"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"google.golang.org/api/option"
@@ -23,7 +24,12 @@ func SynthesizeText(text string, voice string, rate float64) ([]byte, error) {
 
 	ctx := context.Background()
 
-	client, err := texttospeech.NewClient(ctx, option.WithCredentialsFile("/root/credentials/google-credentials.json"))
+	jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON")
+	if jsonCreds == "" {
+		return nil, errors.New("GOOGLE_CREDENTIALS_JSON environment variable is not set")
+	}
+
+	client, err := texttospeech.NewClient(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
 	if err != nil {
 		return nil, err
 	}

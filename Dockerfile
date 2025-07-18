@@ -18,14 +18,12 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates bash
 
-WORKDIR /root/
+WORKDIR /root/  
 
 # Copy binary, .env, and wait-for-it
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env .env
 COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
-# COPY credentials từ thư mục con
-COPY --from=builder /app/credentials /root/credentials
 
 RUN chmod +x /wait-for-it.sh
 
