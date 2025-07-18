@@ -17,9 +17,8 @@ RUN apk --no-cache add ca-certificates bash coreutils
 WORKDIR /root/
 
 COPY --from=builder /app/main ./
-COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
-
-# ✅ Copy init script
+# Copy trực tiếp từ context
+COPY wait-for-it.sh /wait-for-it.sh
 COPY --from=builder /app/scripts/init-creds.sh ./init-creds.sh
 RUN chmod +x wait-for-it.sh init-creds.sh
 
