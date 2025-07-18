@@ -44,6 +44,12 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		category.PUT("/:id", controllers.UpdateDanhMuc)
 		category.PUT("/:id/status", controllers.ToggleDanhMucStatus)
 	}
+	podcast := api.Group("/podcasts")
+	{
+		podcast.Use(middleware.AuthMiddleware())
+		podcast.GET("/", controllers.GetPodcast)
+		podcast.GET("/search", controllers.SearchPodcast) // Thêm dòng này
+	}
 	// Thêm các route khác tại đây
 	r.GET("/health", controllers.HealthCheck)
 	// Thêm route thực tế tại đây
