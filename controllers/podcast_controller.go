@@ -27,7 +27,7 @@ func GetPodcast(c *gin.Context) {
 	sort := c.DefaultQuery("sort", "date") // sắp xếp theo ngày tạo hoặc tên
 	query := config.DB.Model(&models.Podcast{})
 	// Lấy role từ context (middleware đã set)
-	role, _ := c.Get("role")
+	role, _ := c.Get("vai_tro")
 	if role != "admin" {
 		query = query.Where("kich_hoat = ?", true) // chỉ lấy podcast đã kích hoạt
 	}

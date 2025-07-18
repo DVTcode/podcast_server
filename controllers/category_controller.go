@@ -29,7 +29,7 @@ func GetDanhMucs(c *gin.Context) {
 	query := config.DB.Model(&models.DanhMuc{})
 
 	// Lấy role từ context (giao sử đã có middleware đã set)
-	role, _ := c.Get("role")
+	role, _ := c.Get("vai_tro")
 	if role != "admin" {
 		query = query.Where("kich_hoat = ?", true) // chỉ lấy danh mục đã kích hoạt
 	}
@@ -64,7 +64,7 @@ func GetDanhMucs(c *gin.Context) {
 }
 
 func ToggleDanhMucStatus(c *gin.Context) {
-	role, _ := c.Get("role")
+	role, _ := c.Get("vai_tro")
 	if role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
 		return
@@ -92,7 +92,7 @@ func ToggleDanhMucStatus(c *gin.Context) {
 }
 
 func CreateDanhMuc(c *gin.Context) {
-	if role, _ := c.Get("role"); role != "admin" {
+	if role, _ := c.Get("vai_tro"); role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
 		return
 	}
@@ -124,7 +124,7 @@ func CreateDanhMuc(c *gin.Context) {
 }
 
 func UpdateDanhMuc(c *gin.Context) {
-	if role, _ := c.Get("role"); role != "admin" {
+	if role, _ := c.Get("vai_tro"); role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
 		return
 	}
@@ -154,7 +154,7 @@ func UpdateDanhMuc(c *gin.Context) {
 }
 
 func GetDanhMucByID(c *gin.Context) {
-	if role, _ := c.Get("role"); role != "admin" {
+	if role, _ := c.Get("vai_tro"); role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
 		return
 	}
