@@ -29,10 +29,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	}
 
 	admin := api.Group("/admin")
-	{
-		admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
-		admin.POST("/documents/upload", controllers.UploadDocument)
-	}
+  {
+	admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
+	admin.POST("/documents/upload", controllers.UploadDocument)
+	admin.GET("/documents", controllers.ListDocumentStatus)
+  }
 
 	category := api.Group("/categories")
 	{
