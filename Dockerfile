@@ -3,28 +3,33 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy source code & env
 COPY . .
+
+# Build app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
 
 # Production stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates bash coreutils
+RUN apk --no-cache add ca-certificates bash
 
 WORKDIR /root/
 
-# Copy các file từ builder stage
-COPY --from=builder /app/main ./main
-COPY --from=builder /app/wait-for-it.sh ./wait-for-it.sh
-COPY --from=builder /app/scripts/init-creds.sh ./init-creds.sh
+# Copy binary, .env, and wait-for-it
+COPY --from=builder /app/main .
+COPY --from=builder /app/.env .env
+COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
+# COPY credentials từ thư mục con
+COPY --from=builder /app/credentials /root/credentials
 
-# Cấp quyền thực thi
-RUN chmod +x wait-for-it.sh init-creds.sh
+RUN chmod +x /wait-for-it.sh
 
 EXPOSE 8080
 
-# ✅ Gọi init-creds.sh trước khi chạy app
-CMD ["bash", "-c", "./init-creds.sh && ./wait-for-it.sh db:3306 -- ./main"]
+# Start with wait-for-it
+CMD ["/wait-for-it.sh", "db:3306", "--", "./main"]
