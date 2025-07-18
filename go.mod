@@ -17,7 +17,10 @@ require (
 	gorm.io/gorm v1.30.0
 )
 
-require github.com/gosimple/unidecode v1.0.1 // indirect
+require (
+	github.com/gosimple/unidecode v1.0.1 // indirect
+	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300 
+)
 
 require (
 	cel.dev/expr v0.23.0 // indirect
