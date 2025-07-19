@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 )
 
 func CallUploadDocumentAPI(file *multipart.FileHeader, userID string, token string, voice string, speakingRate float64) (map[string]interface{}, error) {
@@ -31,7 +32,8 @@ func CallUploadDocumentAPI(file *multipart.FileHeader, userID string, token stri
 	_ = writer.WriteField("speaking_rate", fmt.Sprintf("%f", speakingRate))
 	writer.Close()
 
-	// baseURL := os.Getenv("API_BASE_URL")
+	baseURL := os.Getenv("API_BASE_URL")
+	println("Base URL:", baseURL)
 
 	req, err := http.NewRequest("POST", "http://localhost:8080/api/admin/documents/upload", body)
 	if err != nil {

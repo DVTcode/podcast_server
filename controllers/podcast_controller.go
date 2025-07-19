@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DVTcode/podcast_server/config"
 	"github.com/DVTcode/podcast_server/models"
@@ -107,6 +108,7 @@ func GetPodcastByID(c *gin.Context) {
 	})
 }
 
+// /Tạo podcast
 func CreatePodcastWithUpload(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 	userID := c.GetString("user_id")
@@ -228,7 +230,6 @@ func CreatePodcastWithUpload(c *gin.Context) {
 			"luot_xem":          podcast.LuotXem,
 		},
 		"thoi_luong_hienthi": FormatSecondsToHHMMSS(totalSeconds),
-		"tai_lieu":           taiLieuMap,
 	})
 }
 
@@ -237,4 +238,78 @@ func FormatSecondsToHHMMSS(seconds int) string {
 	m := (seconds % 3600) / 60
 	s := seconds % 60
 	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+}
+
+// Cập nhật podcast
+func UpdatePodcast(c *gin.Context) {
+	// Kiểm tra quyền admin
+	if role, _ := c.Get("vai_tro"); role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bạn không có quyền thực hiện hành động này"})
+		return
+	}
+
+	db := c.MustGet("db").(*gorm.DB)
+	podcastID := c.Param("id")
+
+	var podcast models.Podcast
+	if err := db.First(&podcast, "id = ?", podcastID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Podcast không tồn tại"})
+		return
+	}
+
+	// Lấy dữ liệu từ form
+	tieuDe := c.PostForm("tieu_de")
+	moTa := c.PostForm("mo_ta")
+	theTag := c.PostForm("the_tag")
+	danhMucID := c.PostForm("danh_muc_id")
+	trangThai := c.PostForm("trang_thai")
+
+	// Cập nhật nếu có giá trị
+	if tieuDe != "" {
+		podcast.TieuDe = tieuDe
+	}
+	if moTa != "" {
+		podcast.MoTa = moTa
+	}
+	if theTag != "" {
+		podcast.TheTag = theTag
+	}
+	if danhMucID != "" {
+		podcast.DanhMucID = danhMucID
+	}
+	if trangThai != "" {
+		podcast.TrangThai = trangThai
+
+		if trangThai == "Bật" {
+			now := time.Now()
+			podcast.NgayXuatBan = &now
+		}
+	}
+
+	// Upload hình ảnh nếu có
+	if hinhAnhFile, err := c.FormFile("hinh_anh_dai_dien"); err == nil {
+		if imageURL, err := utils.UploadImageToSupabase(hinhAnhFile, uuid.New().String()); err == nil {
+			podcast.HinhAnhDaiDien = imageURL
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể upload hình ảnh", "details": err.Error()})
+			return
+		}
+	}
+
+	// Lưu vào database
+	if err := db.Save(&podcast).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật podcast", "details": err.Error()})
+		return
+	}
+
+	// Load lại đầy đủ quan hệ
+	if err := db.Preload("TaiLieu.NguoiDung").Preload("DanhMuc").First(&podcast, "id = ?", podcastID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể load dữ liệu podcast", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cập nhật podcast thành công",
+		"podcast": podcast,
+	})
 }
