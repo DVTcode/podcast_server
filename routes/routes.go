@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/DVTcode/podcast_server/controllers"
 	"github.com/DVTcode/podcast_server/middleware"
+	"github.com/DVTcode/podcast_server/ws"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -57,6 +58,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	}
 	// Thêm các route khác tại đây
 	r.GET("/health", controllers.HealthCheck)
+
+	r.GET("/ws/doc/:id", ws.HandleWebSocket)
+
 	// Thêm route thực tế tại đây
 
 }

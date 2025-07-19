@@ -43,8 +43,23 @@ func CleanWithGemini(text string) (string, error) {
 	- Làm gọn văn bản: không có dòng trống thừa, không có ký tự lạ
 	- Ngắt đoạn hợp lý, dễ đọc, phù hợp để chuyển thành nội dung podcast
 	- Giữ nguyên nội dung, không thêm bớt, không giải thích
-
+	- Không in đậm, in nghiêng, không sử dụng markdown, chỉ trả về văn bản thuần tuý
 	Văn bản cần làm sạch:`
+
+	fullPrompt := prompt + "\n\n" + text
+
+	return utils.GeminiGenerateText(fullPrompt)
+}
+
+func SummarizeText(text string) (string, error) {
+	prompt := `Bạn là công cụ tóm tắt văn bản.
+	Hãy tóm tắt nội dung sau với yêu cầu:
+	- Giữ nguyên ý chính, không thêm bớt thông tin
+	- Tóm tắt ngắn gọn, dễ hiểu
+	- Không giải thích hay bình luận
+	- Không in đậm, in nghiêng, không sử dụng markdown, chỉ trả về văn bản thuần tuý
+	- Tóm tắt phù hợp để chuyển thành nội dung podcast
+	Văn bản cần tóm tắt:`
 
 	fullPrompt := prompt + "\n\n" + text
 
@@ -58,5 +73,9 @@ func CleanTextPipeline(rawText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return finalCleaned, nil
+	summary, err := SummarizeText(finalCleaned)
+	if err != nil {
+		return "", err
+	}
+	return summary, nil
 }
