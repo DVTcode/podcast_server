@@ -63,8 +63,7 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	ws.SendStatus(id, "Đã tải lên tài liệu")
-	time.Sleep(1 * time.Second)
+	ws.SendStatus(id, "Đã tải lên")
 
 	ws.SendStatus(id, "Đang trích xuất nội dung...")
 	noiDung, err := services.NormalizeInput(services.InputSource{
@@ -89,10 +88,9 @@ func UploadDocument(c *gin.Context) {
 		"TrangThai":        "Đã trích xuất",
 		"NoiDungTrichXuat": cleanedContent,
 	})
-	ws.SendStatus(id, "Đã trích xuất nội dung")
-	time.Sleep(1 * time.Second)
+	ws.SendStatus(id, "Đã trích xuất")
 
-	ws.SendStatus(id, "Đang tạo audio từ nội dung...")
+	ws.SendStatus(id, "Đang tạo audio...")
 
 	// Lấy voice & rate
 	voice := c.PostForm("voice")
@@ -113,7 +111,7 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	ws.SendStatus(id, "Đang lưu audio lên Supabase...")
+	ws.SendStatus(id, "Đang lưu audio...")
 	audioURL, err := utils.UploadBytesToSupabase(audioData, id+".mp3", "audio/mp3")
 	if err != nil {
 		ws.SendStatus(id, "Lỗi upload audio")
