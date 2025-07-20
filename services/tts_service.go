@@ -3,11 +3,9 @@ package services
 import (
 	"context"
 	"errors"
-	"os"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
-	"google.golang.org/api/option"
-	texttospeechpb "google.golang.org/genproto/googleapis/cloud/texttospeech/v1"
+	texttospeechpb "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 )
 
 // SynthesizeText chuyển text thành giọng nói
@@ -23,38 +21,53 @@ func SynthesizeText(text string, voice string, rate float64) ([]byte, error) {
 	}
 
 	ctx := context.Background()
-
-	jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON")
-	if jsonCreds == "" {
-		return nil, errors.New("GOOGLE_CREDENTIALS_JSON environment variable is not set")
-	}
-
-	client, err := texttospeech.NewClient(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
+	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer client.Close()
 
-	req := &texttospeechpb.SynthesizeSpeechRequest{
-		Input: &texttospeechpb.SynthesisInput{
-			InputSource: &texttospeechpb.SynthesisInput_Text{
-				Text: text,
+	var allAudio []byte
+	chunks := splitTextToChunks(text, 4500) // nhỏ hơn 5000 bytes để an toàn
+
+	for _, chunk := range chunks {
+		req := &texttospeechpb.SynthesizeSpeechRequest{
+			Input: &texttospeechpb.SynthesisInput{
+				InputSource: &texttospeechpb.SynthesisInput_Text{
+					Text: chunk,
+				},
 			},
-		},
-		Voice: &texttospeechpb.VoiceSelectionParams{
-			LanguageCode: "vi-VN",
-			Name:         voice,
-		},
-		AudioConfig: &texttospeechpb.AudioConfig{
-			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
-			SpeakingRate:  rate,
-		},
+			Voice: &texttospeechpb.VoiceSelectionParams{
+				LanguageCode: "vi-VN",
+				Name:         voice,
+			},
+			AudioConfig: &texttospeechpb.AudioConfig{
+				AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+				SpeakingRate:  rate,
+			},
+		}
+
+		resp, err := client.SynthesizeSpeech(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		allAudio = append(allAudio, resp.AudioContent...)
 	}
 
-	resp, err := client.SynthesizeSpeech(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+	return allAudio, nil
+}
 
-	return resp.AudioContent, nil
+func splitTextToChunks(text string, maxLen int) []string {
+	var chunks []string
+	runes := []rune(text)
+	for len(runes) > 0 {
+		if len(runes) > maxLen {
+			chunks = append(chunks, string(runes[:maxLen]))
+			runes = runes[maxLen:]
+		} else {
+			chunks = append(chunks, string(runes))
+			break
+		}
+	}
+	return chunks
 }

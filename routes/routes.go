@@ -29,11 +29,14 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	}
 
 	admin := api.Group("/admin")
-  {
-	admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
-	admin.POST("/documents/upload", controllers.UploadDocument)
-	admin.GET("/documents", controllers.ListDocumentStatus)
-  }
+
+	{
+		admin.Use(middleware.AuthMiddleware(), middleware.DBMiddleware(db)) // ✅ inject db cho nhóm admin
+		admin.POST("/documents/upload", controllers.UploadDocument)
+		admin.GET("/documents", controllers.ListDocumentStatus)
+		admin.POST("/podcasts", controllers.CreatePodcastWithUpload)
+		admin.PUT("/podcasts/:id", controllers.UpdatePodcast)
+	}
 
 	category := api.Group("/categories")
 	{
@@ -49,6 +52,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		podcast.Use(middleware.AuthMiddleware())
 		podcast.GET("/", controllers.GetPodcast)
 		podcast.GET("/search", controllers.SearchPodcast) // Thêm dòng này
+		podcast.GET("/:id", controllers.GetPodcastByID)
 	}
 	// Thêm các route khác tại đây
 	r.GET("/health", controllers.HealthCheck)
