@@ -35,7 +35,7 @@ func CallUploadDocumentAPI(file *multipart.FileHeader, userID string, token stri
 	baseURL := os.Getenv("API_BASE_URL")
 	println("Base URL:", baseURL)
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/api/admin/documents/upload", body)
+	req, err := http.NewRequest("POST", "https://podcastserver-production.up.railway.app/api/admin/documents/upload", body)
 	if err != nil {
 		return nil, err
 	}
