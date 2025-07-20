@@ -36,9 +36,6 @@ services:
       SUPABASE_URL: https://ejfdickbdcvgsgsawgvm.supabase.co
       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRpY2tiZGN2Z3Nnc2F3Z3ZtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODM3MDQyMiwiZXhwIjoyMDYzOTQ2NDIyfQ.XpZXj5AfTa_lON_lC5EHhiXN-fsIUgM-upMgA1_OqhA
       GEMINI_API_KEY: AIzaSyCeGZiWJ6_Ynysbwt5-32VRStPTGs1Iwyw
-      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials.json
-    volumes:
-      - ./credentials/google-credentials.json:/app/credentials.json
     networks:
       - podcast_net
 
