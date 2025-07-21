@@ -58,7 +58,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	// Thêm các route khác tại đây
 	r.GET("/health", controllers.HealthCheck)
 
-	r.GET("/ws/doc/:id", ws.HandleWebSocket)
+	r.GET("/ws/document/:id", ws.HandleDocumentWebSocket)
+	r.GET("/ws/status", ws.HandleGlobalWebSocket)
 
 	// Thêm route thực tế tại đây
 
