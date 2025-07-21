@@ -26,7 +26,7 @@ func main() {
 
 	// ✅ Bổ sung cấu hình CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*", "https://podcastserver-production.up.railway.app"}, // 👈 Thay bằng domain frontend thật
+		AllowOrigins:     []string{"http://localhost:5174"}, // 👈 Thay bằng domain frontend thật
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
