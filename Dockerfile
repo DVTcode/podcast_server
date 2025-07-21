@@ -19,7 +19,6 @@ WORKDIR /root/
 
 COPY --from=builder /app/main .
 COPY --from=builder /app/wait-for-it.sh /wait-for-it.sh
-COPY credentials/google-credentials.json ./credentials/google-credentials.json
 
 RUN chmod +x /wait-for-it.sh ./main
 
