@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -84,6 +85,9 @@ func UploadDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể làm sạch nội dung", "details": err.Error()})
 		return
 	}
+
+	// Log nội dung đã làm sạch
+	fmt.Println("Nội dung đã làm sạch: ", cleanedContent)
 
 	db.Model(&doc).Updates(map[string]interface{}{
 		"TrangThai":        "Đã trích xuất",
