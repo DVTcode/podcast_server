@@ -1,3 +1,4 @@
+// ws/handler.go
 package ws
 
 import (
@@ -11,15 +12,14 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// Cân nhắc giới hạn origin khi deploy production
+		// Nên kiểm tra Origin ở môi trường production
 		return true
 	},
 }
 
-func HandleWebSocket(c *gin.Context) {
+// WebSocket cho theo dõi tiến trình xử lý tài liệu riêng
+func HandleDocumentWebSocket(c *gin.Context) {
 	docID := c.Param("id")
-
-	// Xác thực JWT từ query parameter
 	token := c.Query("token")
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Thiếu token"})
@@ -34,36 +34,72 @@ func HandleWebSocket(c *gin.Context) {
 	}
 
 	userID := claims.UserID
-	log.Printf("WebSocket connect: docID=%s by userID=%s\n", docID, userID)
+	log.Printf("WebSocket Document Connect - docID=%s, userID=%s\n", docID, userID)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("Failed to upgrade WebSocket:", err)
+		log.Println("WebSocket upgrade thất bại:", err)
 		return
 	}
 
-	// Đăng ký client
 	H.Register(docID, conn)
 
-	// Gửi message xác nhận
-	if err := conn.WriteMessage(websocket.TextMessage, []byte("WebSocket connected to document: "+docID)); err != nil {
-		log.Println("Initial WriteMessage error:", err)
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("Connected to document "+docID)); err != nil {
 		H.Unregister(docID, conn)
 		conn.Close()
 		return
 	}
 
-	// Lặp để giữ kết nối mở
 	for {
-		_, _, err := conn.ReadMessage()
-		if err != nil {
-			log.Printf("WebSocket closed: docID=%s, userID=%s, err=%v\n", docID, userID, err)
+		if _, _, err := conn.ReadMessage(); err != nil {
+			log.Printf("WebSocket Document Disconnect - docID=%s, userID=%s\n", docID, userID)
 			break
 		}
 	}
 
-	// Cleanup khi client ngắt kết nối
 	H.Unregister(docID, conn)
 	conn.Close()
-	log.Printf("WebSocket disconnect: docID=%s, userID=%s\n", docID, userID)
+}
+
+// WebSocket cho theo dõi trạng thái danh sách tài liệu chung
+func HandleGlobalWebSocket(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Thiếu token"})
+		return
+	}
+
+	claims, err := utils.VerifyToken(token)
+	if err != nil {
+		log.Println("Token không hợp lệ:", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token không hợp lệ hoặc hết hạn"})
+		return
+	}
+
+	userID := claims.UserID
+	log.Printf("WebSocket Global Connect - userID=%s\n", userID)
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println("WebSocket upgrade thất bại:", err)
+		return
+	}
+
+	H.RegisterGlobal(conn)
+
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("Connected to document list")); err != nil {
+		H.UnregisterGlobal(conn)
+		conn.Close()
+		return
+	}
+
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			log.Printf("WebSocket Global Disconnect - userID=%s\n", userID)
+			break
+		}
+	}
+
+	H.UnregisterGlobal(conn)
+	conn.Close()
 }

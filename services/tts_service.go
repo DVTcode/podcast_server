@@ -5,11 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	texttospeechpb "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
-	"google.golang.org/api/option"
 )
 
 // SynthesizeText chuyển text thành audio []byte
@@ -25,12 +23,13 @@ func SynthesizeText(text string, voice string, rate float64) ([]byte, error) {
 	}
 
 	ctx := context.Background()
-	jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON")
-	if jsonCreds == "" {
-		return nil, errors.New("GOOGLE_CREDENTIALS_JSON environment variable is not set")
-	}
+	// jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON")
+	// if jsonCreds == "" {
+	// 	return nil, errors.New("GOOGLE_CREDENTIALS_JSON environment variable is not set")
+	// }
 
-	client, err := texttospeech.NewClient(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
+	// client, err := texttospeech.NewClient(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
+	client, err := texttospeech.NewClient(ctx)
 
 	if err != nil {
 		return nil, err

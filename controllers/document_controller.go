@@ -63,8 +63,8 @@ func UploadDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
-
 	ws.SendStatusUpdate(id, "Đã tải lên", 10, "")
+	ws.BroadcastDocumentListChanged()
 
 	ws.SendStatusUpdate(id, "Đang trích xuất nội dung...", 20, "")
 
@@ -94,6 +94,7 @@ func UploadDocument(c *gin.Context) {
 		"NoiDungTrichXuat": cleanedContent,
 	})
 	ws.SendStatusUpdate(id, "Đã trích xuất", 40, "")
+	ws.BroadcastDocumentListChanged()
 
 	ws.SendStatusUpdate(id, "Đang tạo audio...", 50, "")
 
@@ -133,6 +134,9 @@ func UploadDocument(c *gin.Context) {
 
 	ws.SendStatusUpdate(id, "Đang lưu tài liệu...", 80, "")
 	ws.SendStatusUpdate(id, "Hoàn thành", 100, "")
+
+	// Khi xử lý xong tài liệu, gọi:
+	ws.BroadcastDocumentListChanged()
 
 	db.Preload("NguoiDung").First(&doc, "id = ?", doc.ID)
 	c.JSON(http.StatusOK, gin.H{
