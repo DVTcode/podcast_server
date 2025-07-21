@@ -7,6 +7,7 @@ import (
 	
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	texttospeechpb "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
+	"google.golang.org/api/option"
 )
 
 // SynthesizeText chuyển text thành giọng nói
