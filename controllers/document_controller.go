@@ -12,6 +12,7 @@ import (
 	"github.com/DVTcode/podcast_server/models"
 	"github.com/DVTcode/podcast_server/services"
 	"github.com/DVTcode/podcast_server/utils"
+	"github.com/DVTcode/podcast_server/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -21,23 +22,16 @@ func UploadDocument(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 	userID := c.GetString("user_id")
 
-	// Nhận file từ form-data
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Không có file đính kèm"})
 		return
 	}
-
-	// Log dữ liệu file
-	fmt.Println("Dữ liệu file: ", file.Filename)
-
-	// Kiểm tra kích thước (tối đa 20MB)
 	if file.Size > 20*1024*1024 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File vượt quá 20MB"})
 		return
 	}
 
-	// Xác định loại input từ phần mở rộng
 	ext := filepath.Ext(file.Filename)
 	inputType, err := services.GetInputTypeFromExt(ext)
 	if err != nil {
@@ -45,45 +39,49 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
-	// Upload file lên Supabase
 	id := uuid.New().String()
+	ws.SendStatusUpdate(id, "Đang tải lên tài liệu...", 0, "")
+
 	publicURL, err := utils.UploadFileToSupabase(file, id)
 	if err != nil {
+		ws.SendStatusUpdate(id, "Lỗi khi tải lên Supabase", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi upload Supabase", "details": err.Error()})
 		return
 	}
 
-	// Bước 1: Khởi tạo tài liệu với trạng thái ban đầu
 	doc := models.TaiLieu{
 		ID:            id,
 		TenFileGoc:    file.Filename,
 		DuongDanFile:  publicURL,
-		LoaiFile:      ext[1:],
+		LoaiFile:      ext[1:], // loại bỏ dấu chấm
 		KichThuocFile: file.Size,
 		TrangThai:     "Đã tải lên",
 		NguoiTaiLen:   userID,
 	}
 	if err := db.Create(&doc).Error; err != nil {
+		ws.SendStatusUpdate(id, "Không thể lưu tài liệu vào database", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
 
-	// Bước 3: Trích xuất nội dung
+	ws.SendStatusUpdate(id, "Đã tải lên", 10, "")
+
+	ws.SendStatusUpdate(id, "Đang trích xuất nội dung...", 20, "")
+
 	noiDung, err := services.NormalizeInput(services.InputSource{
 		Type:       inputType,
 		FileHeader: file,
 	})
 	if err != nil {
+		ws.SendStatusUpdate(id, "Lỗi khi trích xuất nội dung", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
 		return
 	}
 
-	// Log nội dung trích xuất
-	fmt.Println("Nội dung trích xuất: ", noiDung)
-
-	// Bước 4: Làm sạch nội dung bằng Gemini
+	ws.SendStatusUpdate(id, "Đang làm sạch nội dung...", 30, "")
 	cleanedContent, err := services.CleanTextPipeline(noiDung)
 	if err != nil {
+		ws.SendStatusUpdate(id, "Lỗi khi làm sạch nội dung", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể làm sạch nội dung", "details": err.Error()})
 		return
 	}
@@ -95,55 +93,52 @@ func UploadDocument(c *gin.Context) {
 		"TrangThai":        "Đã trích xuất",
 		"NoiDungTrichXuat": cleanedContent,
 	})
+	ws.SendStatusUpdate(id, "Đã trích xuất", 40, "")
 
-	// Bước 5: Chuyển văn bản thành audio bằng Google TTS
-	// Nhận voice và speaking_rate từ form-data
+	ws.SendStatusUpdate(id, "Đang tạo audio...", 50, "")
+
+	// Lấy voice & rate
 	voice := c.PostForm("voice")
 	if voice == "" {
 		voice = "vi-VN-Chirp3-HD-Puck"
 	}
-
-	rateStr := c.PostForm("speaking_rate")
 	rate := 1.0
-	if rateStr != "" {
-		if parsedRate, err := strconv.ParseFloat(rateStr, 64); err == nil && parsedRate > 0 {
-			rate = parsedRate
+	if rateStr := c.PostForm("speaking_rate"); rateStr != "" {
+		if parsed, err := strconv.ParseFloat(rateStr, 64); err == nil && parsed > 0 {
+			rate = parsed
 		}
 	}
 
-	// Log các tham số voice và speaking_rate
-	fmt.Println("Voice: ", voice)
-	fmt.Println("Speaking Rate: ", rate)
-
 	audioData, err := services.SynthesizeText(cleanedContent, voice, rate)
 	if err != nil {
+		ws.SendStatusUpdate(id, "Lỗi khi tạo audio", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo audio", "details": err.Error()})
 		return
 	}
 
-	// Bước 6: Upload audio lên Supabase
+	ws.SendStatusUpdate(id, "Đang lưu audio...", 60, "")
 	audioURL, err := utils.UploadBytesToSupabase(audioData, id+".mp3", "audio/mp3")
 	if err != nil {
+		ws.SendStatusUpdate(id, "Lỗi upload audio", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể upload audio", "details": err.Error()})
 		return
 	}
 
-	// Log URL audio đã upload
-	fmt.Println("Audio URL: ", audioURL)
-
+	ws.SendStatusUpdate(id, "Đã lưu audio", 70, "")
 	now := time.Now()
-	// Bước cuối: Hoàn thành
 	db.Model(&doc).Updates(map[string]interface{}{
 		"TrangThai":    "Hoàn thành",
 		"NgayXuLyXong": &now,
 	})
-	// Tải lại tài liệu để trả về thông tin đầy đủ
-	db.Preload("NguoiDung").First(&doc, "id = ?", doc.ID)
 
+	ws.SendStatusUpdate(id, "Đang lưu tài liệu...", 80, "")
+	ws.SendStatusUpdate(id, "Hoàn thành", 100, "")
+
+	db.Preload("NguoiDung").First(&doc, "id = ?", doc.ID)
 	c.JSON(http.StatusOK, gin.H{
 		"message":   "Tải lên thành công",
 		"tai_lieu":  doc,
-		"audio_url": audioURL, // trả về nếu frontend cần phát
+		"audio_url": audioURL,
 	})
 }
 
