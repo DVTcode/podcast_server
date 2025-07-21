@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -26,6 +27,9 @@ func UploadDocument(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Không có file đính kèm"})
 		return
 	}
+
+	// Log dữ liệu file
+	fmt.Println("Dữ liệu file: ", file.Filename)
 
 	// Kiểm tra kích thước (tối đa 20MB)
 	if file.Size > 20*1024*1024 {
@@ -63,6 +67,7 @@ func UploadDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
+
 	// Bước 3: Trích xuất nội dung
 	noiDung, err := services.NormalizeInput(services.InputSource{
 		Type:       inputType,
@@ -73,12 +78,18 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
+	// Log nội dung trích xuất
+	fmt.Println("Nội dung trích xuất: ", noiDung)
+
 	// Bước 4: Làm sạch nội dung bằng Gemini
 	cleanedContent, err := services.CleanTextPipeline(noiDung)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể làm sạch nội dung", "details": err.Error()})
 		return
 	}
+
+	// Log nội dung đã làm sạch
+	fmt.Println("Nội dung đã làm sạch: ", cleanedContent)
 
 	db.Model(&doc).Updates(map[string]interface{}{
 		"TrangThai":        "Đã trích xuất",
@@ -99,17 +110,27 @@ func UploadDocument(c *gin.Context) {
 			rate = parsedRate
 		}
 	}
+
+	// Log các tham số voice và speaking_rate
+	fmt.Println("Voice: ", voice)
+	fmt.Println("Speaking Rate: ", rate)
+
 	audioData, err := services.SynthesizeText(cleanedContent, voice, rate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo audio", "details": err.Error()})
 		return
 	}
+
 	// Bước 6: Upload audio lên Supabase
 	audioURL, err := utils.UploadBytesToSupabase(audioData, id+".mp3", "audio/mp3")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể upload audio", "details": err.Error()})
 		return
 	}
+
+	// Log URL audio đã upload
+	fmt.Println("Audio URL: ", audioURL)
+
 	now := time.Now()
 	// Bước cuối: Hoàn thành
 	db.Model(&doc).Updates(map[string]interface{}{

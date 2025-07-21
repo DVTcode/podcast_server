@@ -30,6 +30,11 @@ func CallUploadDocumentAPI(file *multipart.FileHeader, userID string, token stri
 		return nil, fmt.Errorf("failed to copy file content: %v", err)
 	}
 
+	// Log dữ liệu file, voice và speakingRate
+	fmt.Println("Dữ liệu file: ", file.Filename)
+	fmt.Println("Voice: ", voice)
+	fmt.Println("Speaking Rate: ", speakingRate)
+
 	// Ghi các trường vào form
 	if err := writer.WriteField("voice", voice); err != nil {
 		return nil, fmt.Errorf("failed to write voice field: %v", err)
