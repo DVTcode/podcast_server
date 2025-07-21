@@ -1,14 +1,16 @@
+// package services
 package services
 
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
-	texttospeechpb "google.golang.org/genproto/googleapis/cloud/texttospeech/v1"
+	texttospeechpb "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 )
 
-// SynthesizeText chuyển text thành giọng nói
+// SynthesizeText chuyển text thành audio []byte
 func SynthesizeText(text string, voice string, rate float64) ([]byte, error) {
 	if len(text) == 0 {
 		return nil, errors.New("text is empty")
@@ -20,34 +22,78 @@ func SynthesizeText(text string, voice string, rate float64) ([]byte, error) {
 		rate = 1.0
 	}
 
-	ctx := context.Background()
+	// jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON")
+	// if jsonCreds == "" {
+	// 	return nil, errors.New("GOOGLE_CREDENTIALS_JSON environment variable is not set")
+	// }
 
+	ctx := context.Background()
 	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer client.Close()
 
-	req := &texttospeechpb.SynthesizeSpeechRequest{
-		Input: &texttospeechpb.SynthesisInput{
-			InputSource: &texttospeechpb.SynthesisInput_Text{
-				Text: text,
+	chunks := splitTextToChunksByByte(text, 4500) // Dưới ngưỡng 5000 bytes
+	var allAudio []byte
+
+	for idx, chunk := range chunks {
+		fmt.Printf("Synthesizing chunk %d/%d: %d bytes\n", idx+1, len(chunks), len(chunk))
+
+		req := &texttospeechpb.SynthesizeSpeechRequest{
+			Input: &texttospeechpb.SynthesisInput{
+				InputSource: &texttospeechpb.SynthesisInput_Text{
+					Text: chunk,
+				},
 			},
-		},
-		Voice: &texttospeechpb.VoiceSelectionParams{
-			LanguageCode: "vi-VN",
-			Name:         voice,
-		},
-		AudioConfig: &texttospeechpb.AudioConfig{
-			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
-			SpeakingRate:  rate,
-		},
+			Voice: &texttospeechpb.VoiceSelectionParams{
+				LanguageCode: "vi-VN",
+				Name:         voice,
+			},
+			AudioConfig: &texttospeechpb.AudioConfig{
+				AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+				SpeakingRate:  rate,
+			},
+		}
+
+		resp, err := client.SynthesizeSpeech(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		allAudio = append(allAudio, resp.AudioContent...)
 	}
 
-	resp, err := client.SynthesizeSpeech(ctx, req)
-	if err != nil {
-		return nil, err
+	return allAudio, nil
+}
+
+// splitTextToChunksByByte chia text theo giới hạn byte + dấu câu
+func splitTextToChunksByByte(text string, maxBytes int) []string {
+	var chunks []string
+	remaining := text
+
+	for len(remaining) > 0 {
+		if len(remaining) <= maxBytes {
+			chunks = append(chunks, remaining)
+			break
+		}
+
+		cutPos := maxBytes
+		// Tìm dấu câu trong đoạn cắt được
+		for i := cutPos; i > 0; i-- {
+			if remaining[i-1] == '.' || remaining[i-1] == '!' || remaining[i-1] == '?' || remaining[i-1] == '\n' {
+				cutPos = i
+				break
+			}
+		}
+
+		// Nếu không tìm thấy dấu câu, đảm bảo không cắt giữa ký tự UTF-8
+		for cutPos < len(remaining) && (remaining[cutPos]&0xC0) == 0x80 {
+			cutPos++
+		}
+
+		chunks = append(chunks, remaining[:cutPos])
+		remaining = remaining[cutPos:]
 	}
 
-	return resp.AudioContent, nil
+	return chunks
 }

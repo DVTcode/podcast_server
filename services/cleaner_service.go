@@ -54,13 +54,14 @@ func CleanWithGemini(text string) (string, error) {
 func SummarizeText(text string) (string, error) {
 	prompt := `Tôi có một đoạn văn bản, bạn hãy giúp tôi tóm tắt lại nội dung một cách ngắn gọn, rõ ràng, dễ nghe khi được chuyển thành giọng nói (audio).
 	Yêu cầu:
-	1. Ngắn gọn, dễ hiểu
+	1. Không lược bỏ nội dung chính, không tự ý thêm thông tin không có trong văn bản, đảm bảo đủ nội dung quan trọng
 	2. Ngôn ngữ tự nhiên, gần gũi, không quá khô khan
 	3. Có thể thêm câu chuyển đoạn ngắn để mạch lạc hơn
 	4. Không sử dụng từ ngữ chuyên môn quá khó hiểu
 	5. Giọng văn trung tính, nhẹ nhàng, phù hợp để đọc lên
 	6. Không sử dụng markdown, không in đậm, không in nghiêng, chỉ trả về văn bản thuần tuý
 	7. Không bình luận, không giải thích, chỉ trả về nội dung tóm tắt phù hợp để chuyển thành audio podcast
+	8. Có thể bắt đầu bằng câu "Ở podcast này chúng ta sẽ cùng tìm hiểu về..." để rõ ràng hơn
 	Đoạn văn bản cần tóm tắt:`
 
 	fullPrompt := prompt + "\n\n" + text

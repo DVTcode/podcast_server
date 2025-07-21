@@ -39,11 +39,11 @@ func UploadDocument(c *gin.Context) {
 	}
 
 	id := uuid.New().String()
-	ws.SendStatus(id, "Đang tải lên tài liệu...")
+	ws.SendStatusUpdate(id, "Đang tải lên tài liệu...", 0, "")
 
 	publicURL, err := utils.UploadFileToSupabase(file, id)
 	if err != nil {
-		ws.SendStatus(id, "Lỗi khi tải lên Supabase")
+		ws.SendStatusUpdate(id, "Lỗi khi tải lên Supabase", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi upload Supabase", "details": err.Error()})
 		return
 	}
@@ -58,28 +58,29 @@ func UploadDocument(c *gin.Context) {
 		NguoiTaiLen:   userID,
 	}
 	if err := db.Create(&doc).Error; err != nil {
-		ws.SendStatus(id, "Không thể lưu tài liệu vào database")
+		ws.SendStatusUpdate(id, "Không thể lưu tài liệu vào database", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không lưu được tài liệu", "details": err.Error()})
 		return
 	}
 
-	ws.SendStatus(id, "Đã tải lên")
+	ws.SendStatusUpdate(id, "Đã tải lên", 10, "")
 
-	ws.SendStatus(id, "Đang trích xuất nội dung...")
+	ws.SendStatusUpdate(id, "Đang trích xuất nội dung...", 20, "")
+
 	noiDung, err := services.NormalizeInput(services.InputSource{
 		Type:       inputType,
 		FileHeader: file,
 	})
 	if err != nil {
-		ws.SendStatus(id, "Lỗi khi trích xuất nội dung")
+		ws.SendStatusUpdate(id, "Lỗi khi trích xuất nội dung", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể trích xuất nội dung", "details": err.Error()})
 		return
 	}
 
-	ws.SendStatus(id, "Đang làm sạch nội dung...")
+	ws.SendStatusUpdate(id, "Đang làm sạch nội dung...", 30, "")
 	cleanedContent, err := services.CleanTextPipeline(noiDung)
 	if err != nil {
-		ws.SendStatus(id, "Lỗi khi làm sạch nội dung")
+		ws.SendStatusUpdate(id, "Lỗi khi làm sạch nội dung", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể làm sạch nội dung", "details": err.Error()})
 		return
 	}
@@ -88,9 +89,9 @@ func UploadDocument(c *gin.Context) {
 		"TrangThai":        "Đã trích xuất",
 		"NoiDungTrichXuat": cleanedContent,
 	})
-	ws.SendStatus(id, "Đã trích xuất")
+	ws.SendStatusUpdate(id, "Đã trích xuất", 40, "")
 
-	ws.SendStatus(id, "Đang tạo audio...")
+	ws.SendStatusUpdate(id, "Đang tạo audio...", 50, "")
 
 	// Lấy voice & rate
 	voice := c.PostForm("voice")
@@ -106,26 +107,28 @@ func UploadDocument(c *gin.Context) {
 
 	audioData, err := services.SynthesizeText(cleanedContent, voice, rate)
 	if err != nil {
-		ws.SendStatus(id, "Lỗi khi tạo audio")
+		ws.SendStatusUpdate(id, "Lỗi khi tạo audio", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo audio", "details": err.Error()})
 		return
 	}
 
-	ws.SendStatus(id, "Đang lưu audio...")
+	ws.SendStatusUpdate(id, "Đang lưu audio...", 60, "")
 	audioURL, err := utils.UploadBytesToSupabase(audioData, id+".mp3", "audio/mp3")
 	if err != nil {
-		ws.SendStatus(id, "Lỗi upload audio")
+		ws.SendStatusUpdate(id, "Lỗi upload audio", 0, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể upload audio", "details": err.Error()})
 		return
 	}
 
+	ws.SendStatusUpdate(id, "Đã lưu audio", 70, "")
 	now := time.Now()
 	db.Model(&doc).Updates(map[string]interface{}{
 		"TrangThai":    "Hoàn thành",
 		"NgayXuLyXong": &now,
 	})
 
-	ws.SendStatus(id, "Hoàn thành xử lý tài liệu")
+	ws.SendStatusUpdate(id, "Đang lưu tài liệu...", 80, "")
+	ws.SendStatusUpdate(id, "Hoàn thành", 100, "")
 
 	db.Preload("NguoiDung").First(&doc, "id = ?", doc.ID)
 	c.JSON(http.StatusOK, gin.H{

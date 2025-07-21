@@ -22,6 +22,14 @@ var H = Hub{
 	Clients: make(map[string]map[*websocket.Conn]*Client),
 }
 
+// Struct gửi trạng thái đầy đủ qua WebSocket
+type DocumentStatusUpdate struct {
+	DocumentID string  `json:"document_id"`
+	Status     string  `json:"status"`
+	Progress   float64 `json:"progress"`        // từ 0.0 -> 100.0
+	Error      string  `json:"error,omitempty"` // nếu có lỗi thì gửi
+}
+
 // Đăng ký client mới
 func (h *Hub) Register(docID string, conn *websocket.Conn) {
 	h.Mutex.Lock()
@@ -42,20 +50,36 @@ func (h *Hub) Register(docID string, conn *websocket.Conn) {
 	go h.writePump(docID, conn)
 }
 
-// Gửi message tới tất cả client đang theo dõi document đó
-func (h *Hub) Send(docID string, message string) {
+// Gửi message đến tất cả client đang theo dõi document đó
+func (h *Hub) Broadcast(docID string, messageType int, data []byte) {
 	h.Mutex.RLock()
 	defer h.Mutex.RUnlock()
 
 	if clients, ok := h.Clients[docID]; ok {
 		for _, client := range clients {
 			select {
-			case client.Send <- []byte(message):
+			case client.Send <- data:
 			default:
-				// channel đầy, bỏ qua để tránh block
+				// Nếu channel bị nghẽn, bỏ qua
 			}
 		}
 	}
+}
+
+// Gửi trạng thái chi tiết
+func SendStatusUpdate(docID, status string, progress float64, errorMsg string) {
+	update := DocumentStatusUpdate{
+		DocumentID: docID,
+		Status:     status,
+		Progress:   progress,
+		Error:      errorMsg,
+	}
+	data, err := json.Marshal(update)
+	if err != nil {
+		log.Println("JSON marshal error:", err)
+		return
+	}
+	H.Broadcast(docID, websocket.TextMessage, data)
 }
 
 // Dọn dẹp client khi ngắt kết nối
@@ -74,6 +98,7 @@ func (h *Hub) Unregister(docID string, conn *websocket.Conn) {
 	}
 }
 
+// Đọc tin nhắn từ client (hiện tại không xử lý, chỉ để phát hiện disconnect)
 func (h *Hub) readPump(docID string, conn *websocket.Conn) {
 	defer h.Unregister(docID, conn)
 
@@ -84,6 +109,7 @@ func (h *Hub) readPump(docID string, conn *websocket.Conn) {
 	}
 }
 
+// Gửi tin nhắn ra client
 func (h *Hub) writePump(docID string, conn *websocket.Conn) {
 	client := h.Clients[docID][conn]
 	defer func() {
@@ -96,33 +122,4 @@ func (h *Hub) writePump(docID string, conn *websocket.Conn) {
 			break
 		}
 	}
-}
-
-func (h *Hub) Broadcast(docID string, messageType int, data []byte) {
-	h.Mutex.RLock()
-	defer h.Mutex.RUnlock()
-
-	if clients, ok := h.Clients[docID]; ok {
-		for _, client := range clients {
-			select {
-			case client.Send <- data:
-			default:
-				// Nếu channel bị nghẽn, bỏ qua
-			}
-		}
-	}
-}
-
-type StatusMessage struct {
-	Status string `json:"status"`
-}
-
-func SendStatus(docID string, message string) {
-	msg := StatusMessage{Status: message}
-	data, err := json.Marshal(msg)
-	if err != nil {
-		log.Println("JSON marshal error:", err)
-		return
-	}
-	H.Broadcast(docID, websocket.TextMessage, data)
 }
