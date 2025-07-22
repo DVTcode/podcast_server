@@ -29,7 +29,7 @@ func GetPodcast(c *gin.Context) {
 	categoryID := c.Query("category")
 	sort := c.DefaultQuery("sort", "date")
 	query := config.DB.Model(&models.Podcast{})
-
+	//lọc danh podcast theo danh mục, sắp xếp từ A đến Z
 	role, _ := c.Get("vai_tro")
 	if role != "admin" {
 		query = query.Where("trang_thai = ?", "Bật") // Đổi từ "kich_hoat" sang "trang_thai"
@@ -128,6 +128,50 @@ func GetPodcastByID(c *gin.Context) {
 		"data":    podcast,
 		"suggest": related,
 	})
+}
+
+// Lọc podcast theo danh mục
+func GetPodcastsByCategory(c *gin.Context) {
+	categoryID := c.Param("category_id")
+	if categoryID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu ID danh mục"})
+		return
+	}
+
+	var podcasts []models.Podcast
+	query := config.DB.Model(&models.Podcast{}).
+		Where("danh_muc_id = ? AND trang_thai = ?", categoryID, "Bật").
+		Order("ngay_tao_ra DESC")
+
+	if err := query.Find(&podcasts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy podcast theo danh mục"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": podcasts})
+}
+
+// Sắp xếp podcast từ A đến Z cho người dùng
+func GetPodcastsSorted(c *gin.Context) {
+	sort := c.DefaultQuery("sort", "date")
+	var podcasts []models.Podcast
+	query := config.DB.Model(&models.Podcast{}).
+		Where("trang_thai = ?", "Bật") // Chỉ lấy podcast có trạng thái "Bật"
+
+	// Sắp xếp theo NgayTaoRa
+	orderBy := "ngay_tao_ra DESC"
+	if sort == "az" {
+		orderBy = "tieu_de ASC" // Sắp xếp từ A đến Z theo tiêu đề
+	} else if sort == "za" {
+		orderBy = "tieu_de DESC" // Sắp xếp từ Z đến A theo tiêu đề
+	}
+
+	if err := query.Order(orderBy).Find(&podcasts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy podcast đã sắp xếp"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": podcasts})
 }
 
 // /Tạo podcast
