@@ -196,7 +196,7 @@ func GetFilteredPodcastsByMostviewed(c *gin.Context) {
 	// Sắp xếp
 	orderBy := "ngay_tao_ra DESC"
 	if sort == "views" {
-		orderBy = "luot_xem ASC"
+		orderBy = "luot_xem DESC"
 	}
 	query = query.Order(orderBy)
 
