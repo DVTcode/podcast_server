@@ -70,8 +70,6 @@ func GetPodcast(c *gin.Context) {
 
 func SearchPodcast(c *gin.Context) {
 	search := c.Query("q")
-	status := c.Query("trang_thai") // trạng thái truyền từ client
-
 	if search == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu từ khoá tìm kiếm"})
 		return
@@ -79,18 +77,12 @@ func SearchPodcast(c *gin.Context) {
 
 	var podcasts []models.Podcast
 	query := config.DB.Model(&models.Podcast{}).
-		Where("LOWER(tieu_de) LIKE ? OR LOWER(mo_ta) LIKE ? OR LOWER(the_tag) LIKE ?",
-			"%"+strings.ToLower(search)+"%",
-			"%"+strings.ToLower(search)+"%",
-			"%"+strings.ToLower(search)+"%",
-		)
+		Where("LOWER(tieu_de) LIKE ?", "%"+strings.ToLower(search)+"%").
+		Or("LOWER(mo_ta) LIKE ?", "%"+strings.ToLower(search)+"%").
+		Or("LOWER(the_tag) LIKE ?", "%"+strings.ToLower(search)+"%"). // Thêm tìm kiếm trong trường tags
+		Where("trang_thai = ?", "Bật")                                // Kiểm tra trạng thái "Bật"
 
-	// Nếu có truyền trạng thái, lọc theo trạng thái
-	if status != "" {
-		query = query.Where("trang_thai = ?", status)
-	}
-
-	// Preload quan hệ
+	// Preload các quan hệ nếu cần thiết
 	query = query.Preload("TaiLieu").Preload("DanhMuc")
 
 	if err := query.Find(&podcasts).Error; err != nil {
@@ -105,8 +97,8 @@ func GetPodcastByID(c *gin.Context) {
 	id := c.Param("id")
 	var podcast models.Podcast
 
-	// Bước 1: Lấy thông tin podcast theo id (không cần check trạng thái)
-	if err := config.DB.First(&podcast, "id = ?", id).Error; err != nil {
+	// Bước 1: Lấy thông tin podcast theo id và trạng thái "Bật"
+	if err := config.DB.First(&podcast, "id = ? AND trang_thai = ?", id, "Bật").Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy podcast"})
 		} else {
@@ -117,67 +109,72 @@ func GetPodcastByID(c *gin.Context) {
 
 	// Bước 2: Tăng view count cho podcast
 	if err := config.DB.Model(&podcast).UpdateColumn("luot_xem", gorm.Expr("luot_xem + ?", 1)).Error; err != nil {
+		// Nếu có lỗi trong quá trình cập nhật view count
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi tăng view count"})
 		return
 	}
 
-	// Bước 3: Lấy các podcast liên quan (không cần check trạng thái)
+	// Bước 3: Lấy các podcast liên quan (cùng danh mục, loại trừ chính nó)
 	var related []models.Podcast
-	if err := config.DB.Where("danh_muc_id = ? AND id != ?", podcast.DanhMucID, podcast.ID).
+	if err := config.DB.Where("danh_muc_id = ? AND id != ? AND trang_thai = ?", podcast.DanhMucID, podcast.ID, "Bật").
 		Order("ngay_tao_ra DESC").Limit(5).Find(&related).Error; err != nil {
+		// Nếu có lỗi khi lấy các podcast liên quan
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy các podcast liên quan"})
 		return
 	}
 
-	// Bước 4: Trả về kết quả
+	// Bước 4: Trả về thông tin podcast và các podcast liên quan
 	c.JSON(http.StatusOK, gin.H{
 		"data":    podcast,
 		"suggest": related,
 	})
 }
 
-// Lọc podcast theo danh mục
-func GetPodcastsByCategory(c *gin.Context) {
-	categoryID := c.Param("category_id")
-	if categoryID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu ID danh mục"})
-		return
-	}
-
-	var podcasts []models.Podcast
-	query := config.DB.Model(&models.Podcast{}).
-		Where("danh_muc_id = ? AND trang_thai = ?", categoryID, "Bật").
-		Order("ngay_tao_ra DESC")
-
-	if err := query.Find(&podcasts).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy podcast theo danh mục"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": podcasts})
-}
-
-// Sắp xếp podcast từ A đến Z cho người dùng
-func GetPodcastsSorted(c *gin.Context) {
+// Lọc theo danh mục và sắp xếp
+func GetFilteredPodcasts(c *gin.Context) {
+	categoryID := c.Query("category_id") // Lọc theo danh mục (nếu có)
 	sort := c.DefaultQuery("sort", "date")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset := (page - 1) * limit
+
 	var podcasts []models.Podcast
 	query := config.DB.Model(&models.Podcast{}).
-		Where("trang_thai = ?", "Bật") // Chỉ lấy podcast có trạng thái "Bật"
+		Where("trang_thai = ?", "Bật")
 
-	// Sắp xếp theo NgayTaoRa
-	orderBy := "ngay_tao_ra DESC"
-	if sort == "az" {
-		orderBy = "tieu_de ASC" // Sắp xếp từ A đến Z theo tiêu đề
-	} else if sort == "za" {
-		orderBy = "tieu_de DESC" // Sắp xếp từ Z đến A theo tiêu đề
+	if categoryID != "" {
+		query = query.Where("danh_muc_id = ?", categoryID)
 	}
 
-	if err := query.Order(orderBy).Find(&podcasts).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy podcast đã sắp xếp"})
+	// Sắp xếp
+	orderBy := "ngay_tao_ra DESC"
+	switch sort {
+	case "az":
+		orderBy = "tieu_de ASC"
+	case "za":
+		orderBy = "tieu_de DESC"
+	}
+	query = query.Order(orderBy)
+
+	// Tổng số podcast
+	var total int64
+	query.Count(&total)
+
+	// Lấy danh sách theo trang
+	if err := query.Offset(offset).Limit(limit).Find(&podcasts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy danh sách podcast"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": podcasts})
+	c.JSON(http.StatusOK, gin.H{
+		"data": podcasts,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (total + int64(limit) - 1) / int64(limit),
+		},
+	})
 }
 
 // /Tạo podcast
