@@ -54,7 +54,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		podcast.GET("/", controllers.GetPodcast)
 		podcast.GET("/search", controllers.SearchPodcast) // Thêm dòng này
 		podcast.GET("/:id", controllers.GetPodcastByID)
-		podcast.GET("/sorted", controllers.GetFilteredPodcasts)
+		podcast.GET("/sortedaz", controllers.GetFilteredPodcasts)
+		podcast.GET("/sortedmostviewed", controllers.GetFilteredPodcastsByMostviewed)
+		podcast.GET("/sortedduration", controllers.GetFilteredPodcastsByDuration)
 	}
 
 	// Thêm các route khác tại đây

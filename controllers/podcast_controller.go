@@ -133,7 +133,7 @@ func GetPodcastByID(c *gin.Context) {
 // Lọc theo danh mục và sắp xếp
 func GetFilteredPodcasts(c *gin.Context) {
 	categoryID := c.Query("category_id") // Lọc theo danh mục (nếu có)
-	sort := c.DefaultQuery("sort", "date")
+	sort := c.DefaultQuery("alphabetical", "date")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset := (page - 1) * limit
@@ -153,6 +153,97 @@ func GetFilteredPodcasts(c *gin.Context) {
 		orderBy = "tieu_de ASC"
 	case "za":
 		orderBy = "tieu_de DESC"
+	}
+	query = query.Order(orderBy)
+
+	// Tổng số podcast
+	var total int64
+	query.Count(&total)
+
+	// Lấy danh sách theo trang
+	if err := query.Offset(offset).Limit(limit).Find(&podcasts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy danh sách podcast"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": podcasts,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (total + int64(limit) - 1) / int64(limit),
+		},
+	})
+}
+
+// Lọc theo danh mục và sắp xếp theo lượt xem cao nhất
+func GetFilteredPodcastsByMostviewed(c *gin.Context) {
+	categoryID := c.Query("category_id") // Lọc theo danh mục (nếu có)
+	sort := c.DefaultQuery("most_viewed", "date")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset := (page - 1) * limit
+
+	var podcasts []models.Podcast
+	query := config.DB.Model(&models.Podcast{}).
+		Where("trang_thai = ?", "Bật")
+
+	if categoryID != "" {
+		query = query.Where("danh_muc_id = ?", categoryID)
+	}
+
+	// Sắp xếp
+	orderBy := "ngay_tao_ra DESC"
+	if sort == "views" {
+		orderBy = "luot_xem ASC"
+	}
+	query = query.Order(orderBy)
+
+	// Tổng số podcast
+	var total int64
+	query.Count(&total)
+
+	// Lấy danh sách theo trang
+	if err := query.Offset(offset).Limit(limit).Find(&podcasts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy danh sách podcast"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": podcasts,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (total + int64(limit) - 1) / int64(limit),
+		},
+	})
+}
+
+// Lọc theo danh mục và sắp xếp theo lượt thời lượng
+func GetFilteredPodcastsByDuration(c *gin.Context) {
+	categoryID := c.Query("category_id") // Lọc theo danh mục (nếu có)
+	sort := c.DefaultQuery("duration", "date")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset := (page - 1) * limit
+
+	var podcasts []models.Podcast
+	query := config.DB.Model(&models.Podcast{}).
+		Where("trang_thai = ?", "Bật")
+
+	if categoryID != "" {
+		query = query.Where("danh_muc_id = ?", categoryID)
+	}
+
+	// Sắp xếp
+	orderBy := "ngay_tao_ra DESC"
+	switch sort {
+	case "duration_asc":
+		orderBy = "thoi_luong_giay ASC"
+	case "duration_desc":
+		orderBy = "thoi_luong_giay DESC"
 	}
 	query = query.Order(orderBy)
 
