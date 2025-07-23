@@ -37,6 +37,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		admin.GET("/documents", controllers.ListDocumentStatus)
 		admin.POST("/podcasts", controllers.CreatePodcastWithUpload)
 		admin.PUT("/podcasts/:id", controllers.UpdatePodcast)
+		admin.GET("/stats", middleware.AuthMiddleware(), controllers.GetAdminStats)
 	}
 
 	category := api.Group("/categories")
