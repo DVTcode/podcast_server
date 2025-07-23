@@ -97,8 +97,17 @@ func GetPodcastByID(c *gin.Context) {
 	id := c.Param("id")
 	var podcast models.Podcast
 
-	// Bước 1: Lấy thông tin podcast theo id và trạng thái "Bật"
-	if err := config.DB.First(&podcast, "id = ? AND trang_thai = ?", id, "Bật").Error; err != nil {
+	// Xác định vai trò người dùng từ middleware
+	role, _ := c.Get("vai_tro")
+
+	query := config.DB.Model(&models.Podcast{})
+	if role != "admin" {
+		// User chỉ được xem podcast có trạng thái "Bật"
+		query = query.Where("trang_thai = ?", "Bật")
+	}
+
+	// Tìm podcast theo ID (và theo trạng thái nếu không phải admin)
+	if err := query.First(&podcast, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy podcast"})
 		} else {
@@ -107,23 +116,20 @@ func GetPodcastByID(c *gin.Context) {
 		return
 	}
 
-	// Bước 2: Tăng view count cho podcast
+	// Tăng view count
 	if err := config.DB.Model(&podcast).UpdateColumn("luot_xem", gorm.Expr("luot_xem + ?", 1)).Error; err != nil {
-		// Nếu có lỗi trong quá trình cập nhật view count
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi tăng view count"})
 		return
 	}
 
-	// Bước 3: Lấy các podcast liên quan (cùng danh mục, loại trừ chính nó)
+	// Lấy các podcast liên quan cùng danh mục (chỉ lấy "Bật" để show ra cho user)
 	var related []models.Podcast
-	if err := config.DB.Where("danh_muc_id = ? AND id != ? AND trang_thai = ?", podcast.DanhMucID, podcast.ID, "Bật").
-		Order("ngay_tao_ra DESC").Limit(5).Find(&related).Error; err != nil {
-		// Nếu có lỗi khi lấy các podcast liên quan
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy các podcast liên quan"})
-		return
-	}
+	config.DB.
+		Where("danh_muc_id = ? AND id != ? AND trang_thai = ?", podcast.DanhMucID, podcast.ID, "Bật").
+		Order("ngay_tao_ra DESC").Limit(5).
+		Find(&related)
 
-	// Bước 4: Trả về thông tin podcast và các podcast liên quan
+	// Trả về dữ liệu
 	c.JSON(http.StatusOK, gin.H{
 		"data":    podcast,
 		"suggest": related,
