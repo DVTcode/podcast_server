@@ -70,21 +70,47 @@ func GetPodcast(c *gin.Context) {
 
 func SearchPodcast(c *gin.Context) {
 	search := c.Query("q")
-	if search == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu từ khoá tìm kiếm"})
-		return
-	}
+	sortField := c.Query("sort")
+	sortOrder := c.DefaultQuery("order", "desc") // Mặc định là DESC nếu không truyền
+	trangThai := c.Query("trang_thai")           // "Bật", "Tắt", hoặc ""
+	danhMucID := c.Query("danh_muc_id")          // Có thể lọc theo danh mục
 
 	var podcasts []models.Podcast
-	query := config.DB.Model(&models.Podcast{}).
-		Where("LOWER(tieu_de) LIKE ?", "%"+strings.ToLower(search)+"%").
-		Or("LOWER(mo_ta) LIKE ?", "%"+strings.ToLower(search)+"%").
-		Or("LOWER(the_tag) LIKE ?", "%"+strings.ToLower(search)+"%"). // Thêm tìm kiếm trong trường tags
-		Where("trang_thai = ?", "Bật")                                // Kiểm tra trạng thái "Bật"
 
-	// Preload các quan hệ nếu cần thiết
+	query := config.DB.Model(&models.Podcast{})
+
+	// Lọc theo từ khóa tìm kiếm nếu có
+	if search != "" {
+		search = strings.ToLower(search)
+		query = query.Where("LOWER(tieu_de) LIKE ? OR LOWER(mo_ta) LIKE ? OR LOWER(the_tag) LIKE ?",
+			"%"+search+"%", "%"+search+"%", "%"+search+"%")
+	}
+
+	// Lọc theo trạng thái nếu được truyền
+	if trangThai != "" {
+		query = query.Where("trang_thai = ?", trangThai)
+	}
+
+	// Lọc theo danh mục nếu được truyền
+	if danhMucID != "" {
+		query = query.Where("danh_muc_id = ?", danhMucID)
+	}
+
+	// Mapping trường sắp xếp hợp lệ
+	switch sortField {
+	case "ngay_tao_ra", "luot_xem", "tieu_de":
+		if sortOrder != "asc" && sortOrder != "desc" {
+			sortOrder = "desc"
+		}
+		query = query.Order(sortField + " " + sortOrder)
+	default:
+		// Không sắp xếp nếu không hợp lệ
+	}
+
+	// Preload nếu có quan hệ liên kết
 	query = query.Preload("TaiLieu").Preload("DanhMuc")
 
+	// Truy vấn
 	if err := query.Find(&podcasts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi tìm kiếm podcast"})
 		return
