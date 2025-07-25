@@ -69,13 +69,26 @@ func GetPodcast(c *gin.Context) {
 }
 
 func SearchPodcast(c *gin.Context) {
+	// Lấy các tham số từ query string
 	search := c.Query("q")
 	sortField := c.Query("sort")
 	sortOrder := c.DefaultQuery("order", "desc") // Mặc định là DESC nếu không truyền
 	trangThai := c.Query("trang_thai")           // "Bật", "Tắt", hoặc ""
 	danhMucID := c.Query("danh_muc_id")          // Có thể lọc theo danh mục
 
+	// Phân trang
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
 	var podcasts []models.Podcast
+	var total int64
 
 	query := config.DB.Model(&models.Podcast{})
 
@@ -110,13 +123,25 @@ func SearchPodcast(c *gin.Context) {
 	// Preload nếu có quan hệ liên kết
 	query = query.Preload("TaiLieu").Preload("DanhMuc")
 
-	// Truy vấn
-	if err := query.Find(&podcasts).Error; err != nil {
+	// Tính tổng số podcast cho phân trang
+	query.Count(&total)
+
+	// Lấy danh sách podcast theo phân trang
+	if err := query.Offset(offset).Limit(limit).Find(&podcasts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi tìm kiếm podcast"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": podcasts})
+	// Trả về kết quả và phân trang
+	c.JSON(http.StatusOK, gin.H{
+		"data": podcasts,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (total + int64(limit) - 1) / int64(limit),
+		},
+	})
 }
 
 func GetPodcastByID(c *gin.Context) {
